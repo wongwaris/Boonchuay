@@ -137,10 +137,18 @@ const SPLITS: Record<number, Array<{ focus: string; emoji: string; muscles: stri
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Fixed day distribution patterns so training days are spread evenly across the week
+const TRAINING_INDICES: Record<number, number[]> = {
+  3: [0, 2, 4],        // Mon, Wed, Fri
+  4: [0, 1, 3, 4],     // Mon, Tue, Thu, Fri
+  5: [0, 1, 2, 4, 5],  // Mon-Wed, Fri-Sat
+};
+
 export function generateWorkoutPlan(profile: UserProfile): WorkoutDay[] {
   const days = profile.trainingDays ?? 3;
   const loc = profile.workoutLocation ?? 'gym';
   const splits = SPLITS[days] ?? SPLITS[3];
+  const trainingIndices = TRAINING_INDICES[days] ?? TRAINING_INDICES[3];
 
   const restDay: WorkoutDay = {
     dayName: '',
@@ -155,38 +163,26 @@ export function generateWorkoutPlan(profile: UserProfile): WorkoutDay[] {
     const exercises: Exercise[] = [];
     s.muscles.forEach((m) => {
       const pool = DB[m]?.[loc] ?? DB[m]?.gym ?? [];
-      const pick = pool.slice(0, 3);
-      exercises.push(...pick);
+      exercises.push(...pool.slice(0, 3));
     });
 
     const totalSets = exercises.reduce((acc, e) => acc + e.sets, 0);
-    const estimatedMinutes = Math.round((totalSets * 2.5) / 60) * 60 / 60 + exercises.length * 2;
+    const estimatedMinutes = Math.round(totalSets * 2.5) + exercises.length * 2;
 
     return {
       dayName: '',
       focus: s.focus,
       emoji: s.emoji,
       exercises,
-      estimatedMinutes: Math.max(30, Math.min(70, estimatedMinutes)),
+      estimatedMinutes: Math.max(30, Math.min(75, estimatedMinutes)),
     };
   });
 
-  const plan: WorkoutDay[] = [];
-  let trainingIdx = 0;
-
-  for (let i = 0; i < 7; i++) {
-    if (trainingIdx < trainingDays.length) {
-      const step = Math.floor(7 / days);
-      if (i % step === 0 && trainingIdx < days) {
-        plan.push({ ...trainingDays[trainingIdx], dayName: WEEK_DAYS[i] });
-        trainingIdx++;
-      } else {
-        plan.push({ ...restDay, dayName: WEEK_DAYS[i] });
-      }
-    } else {
-      plan.push({ ...restDay, dayName: WEEK_DAYS[i] });
+  return WEEK_DAYS.map((dayName, i) => {
+    const splitIdx = trainingIndices.indexOf(i);
+    if (splitIdx !== -1 && splitIdx < trainingDays.length) {
+      return { ...trainingDays[splitIdx], dayName };
     }
-  }
-
-  return plan;
+    return { ...restDay, dayName };
+  });
 }

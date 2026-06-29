@@ -27,7 +27,6 @@ export default function PlanGeneratingScreen({ navigation }: Props) {
   const progress = useRef(new Animated.Value(0)).current;
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepIndex = useRef(0);
-  const stepText = useRef(new Animated.Value(0)).current;
   const [currentStep, setCurrentStep] = React.useState(STEPS[0]);
 
   useEffect(() => {
@@ -52,7 +51,7 @@ export default function PlanGeneratingScreen({ navigation }: Props) {
     const timer = setTimeout(() => {
       clearInterval(interval);
       update({ onboardingComplete: true });
-      navigation.replace('Home');
+      navigation.replace('MainTabs');
     }, totalDuration + 600);
 
     return () => {

@@ -11,7 +11,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Injuries'>;
 
 const INJURIES = [
   { id: 'knee_pain', label: 'Knee pain', iconName: 'bone' },
-  { id: 'upper_back', label: 'Upper back pain', iconName: 'human-handsup' },
+  { id: 'upper_back', label: 'Upper back pain', iconName: 'human-male-height' },
   { id: 'lower_back', label: 'Lower back pain', iconName: 'human' },
   { id: 'elbow_pain', label: 'Elbow pain', iconName: 'arm-flex-outline' },
 ];

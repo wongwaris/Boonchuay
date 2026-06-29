@@ -5,13 +5,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
 import { useProfile } from '../context/ProfileContext';
+import { useHistory } from '../context/WorkoutHistoryContext';
 import { generateWorkoutPlan, WorkoutDay } from '../utils/workoutGenerator';
 import { colors } from '../theme/colors';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = { navigation: any };
 
 const { width: W } = Dimensions.get('window');
 
@@ -20,12 +19,16 @@ const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { profile, update } = useProfile();
+  const { streak, workouts } = useHistory();
 
   const plan = useMemo(() => generateWorkoutPlan(profile), [profile]);
 
   const todayIdx = new Date().getDay(); // 0 = Sunday
   const planDay = todayIdx === 0 ? 6 : todayIdx - 1; // convert to Mon=0
   const today = plan[Math.min(planDay, plan.length - 1)];
+
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const workedOutToday = workouts.some((w) => w.date === todayDate);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -53,7 +56,13 @@ export default function HomeScreen({ navigation }: Props) {
 
   const resetOnboarding = () => {
     update({ onboardingComplete: false });
-    navigation.replace('Gender');
+    navigation.navigate('Gender');
+  };
+
+  const startWorkout = () => {
+    if (!today.isRest) {
+      navigation.navigate('WorkoutSession', { workout: today });
+    }
   };
 
   return (
@@ -74,8 +83,8 @@ export default function HomeScreen({ navigation }: Props) {
         {/* Stats row */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{profile.trainingDays ?? 3}</Text>
-            <Text style={styles.statLabel}>Days/Week</Text>
+            <Text style={[styles.statValue, { color: colors.amber }]}>{streak}</Text>
+            <Text style={styles.statLabel}>🔥 Streak</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{bmi || '—'}</Text>
@@ -96,7 +105,7 @@ export default function HomeScreen({ navigation }: Props) {
 
         {/* Today's workout */}
         <Text style={styles.sectionTitle}>Today's Workout</Text>
-        <TodayCard day={today} />
+        <TodayCard day={today} onStart={startWorkout} done={workedOutToday} />
 
         {/* Weekly plan */}
         <Text style={styles.sectionTitle}>This Week</Text>
@@ -126,7 +135,7 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
-function TodayCard({ day }: { day: WorkoutDay }) {
+function TodayCard({ day, onStart, done }: { day: WorkoutDay; onStart: () => void; done: boolean }) {
   if (day.isRest) {
     return (
       <LinearGradient colors={['#131D2E', '#192235']} style={styles.todayCard}>
@@ -144,9 +153,15 @@ function TodayCard({ day }: { day: WorkoutDay }) {
           <Text style={styles.todayFocus}>{day.focus}</Text>
           <Text style={styles.todayMeta}>~{day.estimatedMinutes} min  •  {day.exercises.length} exercises</Text>
         </View>
-        <View style={styles.todayBadge}>
-          <Text style={styles.todayBadgeText}>TODAY</Text>
-        </View>
+        {done ? (
+          <View style={[styles.todayBadge, { backgroundColor: colors.success }]}>
+            <Text style={styles.todayBadgeText}>✓ DONE</Text>
+          </View>
+        ) : (
+          <View style={styles.todayBadge}>
+            <Text style={styles.todayBadgeText}>TODAY</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.exerciseList}>
@@ -161,6 +176,15 @@ function TodayCard({ day }: { day: WorkoutDay }) {
           <Text style={styles.moreExercises}>+{day.exercises.length - 4} more exercises</Text>
         )}
       </View>
+
+      <TouchableOpacity
+        style={[styles.startBtn, done && styles.startBtnDone]}
+        onPress={onStart}
+        activeOpacity={0.85}
+      >
+        <Ionicons name={done ? 'refresh' : 'play'} size={16} color="#fff" />
+        <Text style={styles.startBtnText}>{done ? 'Redo Workout' : 'Start Workout'}</Text>
+      </TouchableOpacity>
     </LinearGradient>
   );
 }
@@ -212,6 +236,12 @@ const styles = StyleSheet.create({
   exerciseName: { flex: 1, color: colors.text, fontSize: 14 },
   exerciseSets: { color: colors.textSecondary, fontSize: 13 },
   moreExercises: { color: colors.accent, fontSize: 13, marginTop: 4 },
+  startBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, marginTop: 14,
+  },
+  startBtnDone: { backgroundColor: colors.success },
+  startBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   weekGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
   weekCard: {
