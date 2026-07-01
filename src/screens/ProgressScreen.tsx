@@ -114,7 +114,7 @@ function DonutChart({ slices }: { slices: { name: string; pct: number; color: st
   }
 
   let offset = 0;
-  const totalCount = slices.reduce((a, s) => a + s.count, 0) as unknown as number;
+  const totalCount = slices.reduce((a, s) => a + s.count, 0);
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
@@ -126,7 +126,7 @@ function DonutChart({ slices }: { slices: { name: string; pct: number; color: st
           return <Path key={i} d={path} fill="none" stroke={s.color} strokeWidth={STROKE} />;
         })}
         <SvgText x={CX} y={CY - 6} fill={colors.text} fontSize={22} textAnchor="middle" fontWeight="800">
-          {(totalCount as any as number)}
+          {totalCount}
         </SvgText>
         <SvgText x={CX} y={CY + 12} fill={colors.textSecondary} fontSize={11} textAnchor="middle">
           workouts

@@ -38,6 +38,7 @@ export default function WorkoutSessionScreen({ route, navigation }: Props) {
   );
 
   const [restSeconds, setRestSeconds] = useState(0);
+  const [restTotal, setRestTotal] = useState(0);
   const [restVisible, setRestVisible] = useState(false);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -48,6 +49,7 @@ export default function WorkoutSessionScreen({ route, navigation }: Props) {
 
   const startRest = (seconds: number) => {
     if (restRef.current) clearInterval(restRef.current);
+    setRestTotal(seconds);
     setRestSeconds(seconds);
     setRestVisible(true);
     restRef.current = setInterval(() => {
@@ -241,7 +243,7 @@ export default function WorkoutSessionScreen({ route, navigation }: Props) {
             <Text style={styles.restTitle}>Rest</Text>
             <Text style={styles.restTimer}>{formatTime(restSeconds)}</Text>
             <View style={styles.restProgress}>
-              <View style={styles.restProgressFill} />
+              <View style={[styles.restProgressFill, { width: `${restTotal > 0 ? (restSeconds / restTotal) * 100 : 0}%` }]} />
             </View>
             <TouchableOpacity style={styles.restSkipBtn} onPress={dismissRest}>
               <Text style={styles.restSkipText}>Skip Rest</Text>
